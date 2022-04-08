@@ -463,6 +463,7 @@ struct cdns_dsi {
 	struct reset_control *dsi_p_rst;
 	struct clk *dsi_sys_clk;
 	bool link_initialized;
+	bool phy_initialized;
 	struct phy *dphy;
 };
 static void cdns_dsi_hs_init(struct cdns_dsi *dsi);
@@ -702,7 +703,7 @@ static int cdns_dsi_check_conf(struct cdns_dsi *dsi,
 	}*/
 
 	pr_err("%s / %d: return: %d count %d \n", __func__, __LINE__, 0, count);
-#if 1
+#if 0 
 	if(!count) {
 		cdns_dsi_init_link(dsi);
 		cdns_dsi_hs_init(dsi);
@@ -759,6 +760,8 @@ cdns_dsi_bridge_mode_valid(struct drm_bridge *bridge,
 	ret = cdns_dsi_check_conf(dsi, mode, &dsi_cfg, true);
 	if (ret)
 		return MODE_BAD;
+	cdns_dsi_init_link(dsi);
+	cdns_dsi_hs_init(dsi);
 
 	return MODE_OK;
 }
@@ -783,6 +786,9 @@ static void cdns_dsi_hs_init(struct cdns_dsi *dsi)
 {
 	struct cdns_dsi_output *output = &dsi->output;
 	u32 status;
+
+	if (dsi->phy_initialized)
+		return;
 
 	/*
 	 * Power all internal DPHY blocks down and maintain their reset line
@@ -812,6 +818,7 @@ static void cdns_dsi_hs_init(struct cdns_dsi *dsi)
 	       dsi->regs + MCTL_DPHY_CFG0);
 	       */
 	iowrite32(0x00110000, dsi->regs + MCTL_DPHY_CFG0 );
+	dsi->phy_initialized = true;
 }
 
 static void cdns_dsi_init_link(struct cdns_dsi *dsi)
